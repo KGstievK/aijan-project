@@ -7,9 +7,14 @@ const updateRequestSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
 });
 
+// Use type instead of interface for params
+type RouteParams = {
+  id: string;
+};
+
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   try {
     const token = request.cookies.get('accessToken')?.value;
@@ -33,6 +38,13 @@ export async function PATCH(
     const body = await request.json();
     const { status } = updateRequestSchema.parse(body);
     const requestId = parseInt(params.id);
+
+    if (isNaN(requestId)) {
+      return NextResponse.json(
+        { error: 'Неверный ID заявки' },
+        { status: 400 }
+      );
+    }
 
     const updatedRequest = await prisma.request.update({
       where: { id: requestId },
@@ -59,7 +71,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   try {
     const token = request.cookies.get('accessToken')?.value;
@@ -82,11 +94,23 @@ export async function DELETE(
 
     const requestId = parseInt(params.id);
 
+    if (isNaN(requestId)) {
+      return NextResponse.json(
+        { error: 'Неверный ID заявки' },
+        { status: 400 }
+      );
+    }
+
     await prisma.request.delete({
       where: { id: requestId },
     });
 
-    return NextResponse.json({ message: 'Заявка удалена' });
+    return new NextResponse(JSON.stringify({ message: 'Заявка удалена' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
     console.error('Delete request error:', error);
     return NextResponse.json(
