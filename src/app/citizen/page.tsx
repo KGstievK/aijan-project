@@ -4,12 +4,19 @@ import LayoutSide from '@/components/Layout/LayoutSide';
 import { useGetMeQuery } from '@/redux/api/auth';
 import { useCreateRequestMutation } from '@/redux/api/requests';
 
+// Тип для данных формы
+type RequestFormData = {
+  department: string;
+  date: string;
+  description?: string;
+};
+
 export default function CitizenPage() {
   const { data: user } = useGetMeQuery();
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset } = useForm<RequestFormData>();
   const [createRequest] = useCreateRequestMutation();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: RequestFormData) => {
     try {
       await createRequest({
         department: data.department,

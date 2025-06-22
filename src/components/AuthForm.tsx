@@ -50,6 +50,15 @@ type CitizenRegisterData = z.infer<typeof citizenRegisterSchema>;
 type CitizenLoginData = z.infer<typeof citizenLoginSchema>;
 type AdminData = z.infer<typeof adminSchema>;
 
+// Типы для ошибок API
+interface ApiError {
+  status: number;
+  data?: {
+    error?: string;
+  };
+  message?: string;
+}
+
 export const AuthForm = () => {
   const [activeTab, setActiveTab] = useState<"citizen" | "admin">("citizen");
   const [isRegister, setIsRegister] = useState(false);
@@ -64,7 +73,6 @@ export const AuthForm = () => {
     register: citizenRegRegister,
     handleSubmit: citizenRegHandleSubmit,
     formState: { errors: citizenRegErrors },
-    reset: citizenRegReset,
   } = useForm<CitizenRegisterData>({
     resolver: zodResolver(citizenRegisterSchema),
   });
@@ -101,9 +109,10 @@ export const AuthForm = () => {
       console.log("Регистрация успешна:", response);
       localStorage.setItem("accessToken", response.accessToken);
       window.location.href = "/citizen";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Ошибка регистрации:", error);
-      if (error.status === 400) {
+      const apiError = error as ApiError;
+      if (apiError.status === 400) {
         setAuthError("Пользователь с таким email уже существует");
       } else {
         setAuthError("Произошла ошибка при регистрации");
@@ -126,10 +135,11 @@ export const AuthForm = () => {
       console.log("Вход успешен:", response);
       localStorage.setItem("accessToken", response.accessToken);
       window.location.href = "/citizen";
-    } catch (error: any) {
-      console.error("Ошибка входа админа:", error);
-      if (error.status === 401) {
-        if (error.data?.error === "Неверные учетные данные") {
+    } catch (error: unknown) {
+      console.error("Ошибка входа:", error);
+      const apiError = error as ApiError;
+      if (apiError.status === 401) {
+        if (apiError.data?.error === "Неверные учетные данные") {
           setAuthError(
             "Неверный email или пароль. Проверьте введенные данные."
           );
@@ -138,9 +148,11 @@ export const AuthForm = () => {
         }
       } else {
         setAuthError(
-          `Произошла ошибка: ${error.message || "Неизвестная ошибка"}`
+          `Произошла ошибка: ${apiError.message || "Неизвестная ошибка"}`
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -157,10 +169,11 @@ export const AuthForm = () => {
       console.log("Вход админа успешен:", response);
       localStorage.setItem("accessToken", response.accessToken);
       window.location.href = "/admin";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Ошибка входа админа:", error);
-      if (error.status === 401) {
-        if (error.data?.error === "Неверные учетные данные") {
+      const apiError = error as ApiError;
+      if (apiError.status === 401) {
+        if (apiError.data?.error === "Неверные учетные данные") {
           setAuthError(
             "Неверный email или пароль. Проверьте введенные данные."
           );
@@ -169,9 +182,11 @@ export const AuthForm = () => {
         }
       } else {
         setAuthError(
-          `Произошла ошибка: ${error.message || "Неизвестная ошибка"}`
+          `Произошла ошибка: ${apiError.message || "Неизвестная ошибка"}`
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
