@@ -7,14 +7,14 @@ const updateRequestSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
 });
 
-// Use type instead of interface for params
-type RouteParams = {
+// Define the expected params type - в Next.js 15 params теперь Promise
+interface RequestParams {
   id: string;
-};
+}
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  context: { params: Promise<RequestParams> }
 ) {
   try {
     const token = request.cookies.get('accessToken')?.value;
@@ -37,6 +37,9 @@ export async function PATCH(
 
     const body = await request.json();
     const { status } = updateRequestSchema.parse(body);
+    
+    // Await params в Next.js 15
+    const params = await context.params;
     const requestId = parseInt(params.id);
 
     if (isNaN(requestId)) {
@@ -71,7 +74,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  context: { params: Promise<RequestParams> }
 ) {
   try {
     const token = request.cookies.get('accessToken')?.value;
@@ -92,6 +95,8 @@ export async function DELETE(
       );
     }
 
+    // Await params в Next.js 15
+    const params = await context.params;
     const requestId = parseInt(params.id);
 
     if (isNaN(requestId)) {
@@ -105,12 +110,7 @@ export async function DELETE(
       where: { id: requestId },
     });
 
-    return new NextResponse(JSON.stringify({ message: 'Заявка удалена' }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    return NextResponse.json({ message: 'Заявка удалена' });
   } catch (error) {
     console.error('Delete request error:', error);
     return NextResponse.json(
